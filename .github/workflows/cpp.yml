@@ -1,0 +1,116 @@
+name: C++ CI (Build & Tests)
+
+on:
+  push:
+    branches: [ main, "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} • C++17
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            exe_ext: ""         # Linux binaries have no .exe
+            run_shell: bash
+          - os: windows-latest
+            exe_ext: ".exe"     # Windows binaries
+            run_shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- Linux toolchain ----------
+      - name: Install toolchain (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      # ---------- Windows toolchain via MSYS2/MinGW-w64 ----------
+      - name: Install MSYS2 + MinGW-w64 (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gdb
+            make
+
+      - name: Make bin folder
+        shell: ${{ matrix.run_shell }}
+        run: mkdir -p bin
+
+      # ---------- Build main app ----------
+      - name: Build app
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          g++ -std=c++17 -O2 -Wall \
+            src/book.cpp src/user.cpp src/library.cpp src/main.cpp \
+            -o bin/app${{ matrix.exe_ext }}
+
+      - name: Run app (smoke test)
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          ./bin/app${{ matrix.exe_ext }}
+
+      # ---------- Build & run unit tests (one exe per test) ----------
+      - name: Build test: Book
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          g++ -std=c++17 -O2 -Wall \
+            src/book.cpp tests/Tests_Book.cpp \
+            -o bin/test_book${{ matrix.exe_ext }}
+
+      - name: Run test: Book
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: ./bin/test_book${{ matrix.exe_ext }}
+
+      - name: Build test: User
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          g++ -std=c++17 -O2 -Wall \
+            src/user.cpp tests/Tests_User.cpp \
+            -o bin/test_user${{ matrix.exe_ext }}
+
+      - name: Run test: User
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: ./bin/test_user${{ matrix.exe_ext }}
+
+      - name: Build test: Library
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          g++ -std=c++17 -O2 -Wall \
+            src/book.cpp src/user.cpp src/library.cpp tests/Tests_Library.cpp \
+            -o bin/test_library${{ matrix.exe_ext }}
+
+      - name: Run test: Library
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: ./bin/test_library${{ matrix.exe_ext }}
+
+      - name: Build test: Integration
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: |
+          g++ -std=c++17 -O2 -Wall \
+            src/book.cpp src/user.cpp src/library.cpp tests/Tests_Integration.cpp \
+            -o bin/test_integration${{ matrix.exe_ext }}
+
+      - name: Run test: Integration
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || matrix.run_shell }}
+        run: ./bin/test_integration${{ matrix.exe_ext }}
+
+      # ---------- Upload binaries (optional but handy) ----------
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os }}
+          path: bin/**
+          if-no-files-found: error
