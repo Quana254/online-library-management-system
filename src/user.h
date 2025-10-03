@@ -1,4 +1,3 @@
-// src/user.h
 #pragma once
 #include <string>
 #include <unordered_set>
@@ -8,7 +7,7 @@ private:
     int id_;
     std::string name_;
     std::unordered_set<int> borrowed_; // book IDs
-    size_t borrowLimit_{3};            // simple policy
+    size_t borrowLimit_{3};
 
 public:
     User(int id, std::string name, size_t limit = 3);
@@ -20,6 +19,6 @@ public:
     bool hasBorrowed(int bookId) const;
 
     bool canBorrow() const;
-    void noteBorrow(int bookId);
-    void noteReturn(int bookId);
+    bool noteBorrow(int bookId); // false if at limit or already borrowed
+    bool noteReturn(int bookId); // false if not present
 };

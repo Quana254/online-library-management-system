@@ -1,92 +1,84 @@
-#include "Library.h"
-#include <algorithm>
+#include "library.h"
 
-static bool containsIC(const std::string& hay, const std::string& needle) {
-    auto toLower = [](std::string s){ for (auto& c : s) c = (char)tolower(c); return s; };
-    auto H = toLower(hay), N = toLower(needle);
-    return H.find(N) != std::string::npos;
+bool Library::addBook(const Book& b) {
+    return booksById_.emplace(b.id(), b).second;
 }
 
-// ---- Books ----
-Status Library::addBook(const Book& b) {
-    if (books_.count(b.id())) return Status::AlreadyExists;
-    books_.emplace(b.id(), b);
-    return Status::Ok;
+bool Library::removeBook(int bookId) {
+    auto it = booksById_.find(bookId);
+    if (it == booksById_.end()) return false;
+    if (!it->second.available()) return false; // can't remove borrowed book
+    booksById_.erase(it);
+    return true;
 }
 
-Status Library::removeBook(int bookId) {
-    if (!books_.count(bookId)) return Status::NotFound;
-    // Optional rule: disallow removing borrowed books
-    if (!books_.at(bookId).available()) return Status::InvalidOperation;
-    books_.erase(bookId);
-    return Status::Ok;
+Book* Library::findBook(int bookId) {
+    auto it = booksById_.find(bookId);
+    return (it == booksById_.end()) ? nullptr : &it->second;
+}
+const Book* Library::findBook(int bookId) const {
+    auto it = booksById_.find(bookId);
+    return (it == booksById_.end()) ? nullptr : &it->second;
 }
 
-std::optional<Book> Library::getBook(int bookId) const {
-    auto it = books_.find(bookId);
-    if (it == books_.end()) return std::nullopt;
-    return it->second;
-}
-
-std::vector<Book> Library::searchByTitle(const std::string& q) const {
-    std::vector<Book> out;
-    for (const auto& [_, b] : books_) if (containsIC(b.title(), q)) out.push_back(b);
+std::vector<Book*> Library::searchByTitle(const std::string& title) {
+    std::vector<Book*> out;
+    for (auto& kv : booksById_) if (kv.second.title() == title) out.push_back(&kv.second);
     return out;
 }
-std::vector<Book> Library::searchByAuthor(const std::string& q) const {
-    std::vector<Book> out;
-    for (const auto& [_, b] : books_) if (containsIC(b.author(), q)) out.push_back(b);
+std::vector<Book*> Library::searchByAuthor(const std::string& author) {
+    std::vector<Book*> out;
+    for (auto& kv : booksById_) if (kv.second.author() == author) out.push_back(&kv.second);
     return out;
 }
-std::vector<Book> Library::searchByGenre(const std::string& q) const {
-    std::vector<Book> out;
-    for (const auto& [_, b] : books_) if (containsIC(b.genre(), q)) out.push_back(b);
+std::vector<Book*> Library::searchByYear(int year) {
+    std::vector<Book*> out;
+    for (auto& kv : booksById_) if (kv.second.year() == year) out.push_back(&kv.second);
     return out;
 }
 
-// ---- Users ----
-Status Library::addUser(const User& u) {
-    if (users_.count(u.id())) return Status::AlreadyExists;
-    users_.emplace(u.id(), u);
-    return Status::Ok;
+bool Library::addUser(const User& u) {
+    return usersById_.emplace(u.id(), u).second;
 }
 
-std::optional<User> Library::getUser(int userId) const {
-    auto it = users_.find(userId);
-    if (it == users_.end()) return std::nullopt;
-    return it->second;
+bool Library::removeUser(int userId) {
+    auto it = usersById_.find(userId);
+    if (it == usersById_.end()) return false;
+    if (it->second.borrowCount() > 0) return false; // holding books
+    usersById_.erase(it);
+    return true;
 }
 
-// ---- Borrow / Return ----
-Status Library::borrowBook(int userId, int bookId) {
-    auto bu = users_.find(userId);
-    if (bu == users_.end()) return Status::NotFound;
-    auto bb = books_.find(bookId);
-    if (bb == books_.end()) return Status::NotFound;
-
-    User& u = bu->second;
-    Book& b = bb->second;
-
-    if (!b.available()) return Status::NotAvailable;
-    if (!u.canBorrow()) return Status::UserLimitReached;
-
-    if (!b.borrow()) return Status::NotAvailable;
-    u.noteBorrow(bookId);
-    return Status::Ok;
+User* Library::findUser(int userId) {
+    auto it = usersById_.find(userId);
+    return (it == usersById_.end()) ? nullptr : &it->second;
+}
+const User* Library::findUser(int userId) const {
+    auto it = usersById_.find(userId);
+    return (it == usersById_.end()) ? nullptr : &it->second;
 }
 
-Status Library::returnBook(int userId, int bookId) {
-    auto bu = users_.find(userId);
-    if (bu == users_.end()) return Status::NotFound;
-    auto bb = books_.find(bookId);
-    if (bb == books_.end()) return Status::NotFound;
+bool Library::borrowBook(int bookId, int userId) {
+    Book* b = findBook(bookId);
+    User* u  = findUser(userId);
+    if (!b || !u) return false;
+    if (!u->canBorrow()) return false;
+    if (!b->available()) return false;
 
-    User& u = bu->second;
-    Book& b = bb->second;
+    if (!b->borrow(userId)) return false;
+    if (!u->noteBorrow(bookId)) { // rollback if user step fails
+        b->giveBack();
+        return false;
+    }
+    return true;
+}
 
-    if (!u.hasBorrowed(bookId)) return Status::InvalidOperation;
+bool Library::returnBook(int bookId, int userId) {
+    Book* b = findBook(bookId);
+    User* u  = findUser(userId);
+    if (!b || !u) return false;
+    if (!u->hasBorrowed(bookId)) return false;
 
-    b.giveBack();
-    u.noteReturn(bookId);
-    return Status::Ok;
+    if (!b->giveBack()) return false;
+    return u->noteReturn(bookId);
 }

@@ -1,31 +1,23 @@
 #include <iostream>
-#include "Library.h"
-
-static const char* toString(Status s) {
-    switch (s) {
-        case Status::Ok: return "Ok";
-        case Status::NotFound: return "NotFound";
-        case Status::AlreadyExists: return "AlreadyExists";
-        case Status::NotAvailable: return "NotAvailable";
-        case Status::UserLimitReached: return "UserLimitReached";
-        case Status::InvalidOperation: return "InvalidOperation";
-        default: return "Unknown";
-    }
-}
+#include "library.h"
 
 int main() {
     Library lib;
-    lib.addUser(User(1, "Alice", 2));
-    lib.addUser(User(2, "Librarian", 5));
+    lib.addBook(Book(1,"Clean Code","Robert C. Martin","SE",2008));
+    lib.addBook(Book(2,"The Pragmatic Programmer","Andrew Hunt","SE",1999));
+    lib.addUser(User(101,"Student A",2));
 
-    lib.addBook(Book(100, "Clean Code", "Robert Martin", "Software", 2008));
-    lib.addBook(Book(101, "The Pragmatic Programmer", "Andrew Hunt", "Software", 1999));
+    std::cout << "== Library Demo ==\n";
+    std::cout << "Borrow book 1 by user 101: "
+              << (lib.borrowBook(1,101) ? "OK" : "FAIL") << "\n";
+    std::cout << "Borrow book 1 again: "
+              << (lib.borrowBook(1,101) ? "OK" : "FAIL") << "\n";
+    std::cout << "Return book 1: "
+              << (lib.returnBook(1,101) ? "OK" : "FAIL") << "\n";
 
-    std::cout << "Borrow result: " << toString(lib.borrowBook(1, 100)) << "\n";
-    std::cout << "Borrow same again (should fail): " << toString(lib.borrowBook(1, 100)) << "\n";
-    std::cout << "Return result: " << toString(lib.returnBook(1, 100)) << "\n";
-
-    auto results = lib.searchByAuthor("martin");
-    std::cout << "Search by author 'martin' -> " << results.size() << " hit(s)\n";
+    std::cout << "\nBooks by Robert C. Martin:\n";
+    for (auto* b : lib.searchByAuthor("Robert C. Martin")) {
+        std::cout << " - " << b->title() << " (" << b->year() << ")\n";
+    }
     return 0;
 }

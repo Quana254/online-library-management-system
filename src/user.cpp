@@ -1,4 +1,3 @@
-// src/user.cpp
 #include "user.h"
 #include <utility>
 
@@ -12,5 +11,12 @@ size_t User::borrowLimit() const { return borrowLimit_; }
 bool User::hasBorrowed(int bookId) const { return borrowed_.count(bookId) > 0; }
 
 bool User::canBorrow() const { return borrowed_.size() < borrowLimit_; }
-void User::noteBorrow(int bookId) { borrowed_.insert(bookId); }
-void User::noteReturn(int bookId) { borrowed_.erase(bookId); }
+
+bool User::noteBorrow(int bookId) {
+    if (!canBorrow()) return false;
+    return borrowed_.insert(bookId).second;
+}
+
+bool User::noteReturn(int bookId) {
+    return borrowed_.erase(bookId) > 0;
+}

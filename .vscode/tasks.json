@@ -4,13 +4,19 @@
     {
       "label": "Build (MinGW64)",
       "type": "shell",
-      "command": "g++",
+      "command": "C:/msys64/mingw64/bin/g++.exe",
       "args": [
-        "-std=c++17", "-O2", "-Wall",
-        "${workspaceFolder}/src/*.cpp",
-        "-o", "${workspaceFolder}/bin/app.exe"
+        "-std=c++17","-O2","-Wall",
+        "${workspaceFolder}/src/book.cpp",
+        "${workspaceFolder}/src/user.cpp",
+        "${workspaceFolder}/src/library.cpp",
+        "${workspaceFolder}/src/main.cpp",
+        "-o","${workspaceFolder}/bin/app.exe"
       ],
-      "group": { "kind": "build", "isDefault": true },
+      "options": {
+        "shell": {"executable":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"}
+      },
+      "group": {"kind":"build","isDefault":true},
       "problemMatcher": ["$gcc"]
     }
   ]

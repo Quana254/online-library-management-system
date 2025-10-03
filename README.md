@@ -1,25 +1,21 @@
-# online-library-management-system
-C++ app to test cpp concepts 
+# Online Library Management System (C++ OOP)
 
-# Online Library (C++ OOP)
+**Entities:** Book, User, Library  
+**Features:** add/remove/search books; add/remove users; borrow/return with limits  
+**Why OOP here?** Encapsulation of state, clear roles, and modular coordination.
 
-A simple object-oriented library manager in **C++17**.
+## Build & Run (Windows + VS Code + MSYS2)
+1. Ensure `C:\msys64\mingw64\bin` is in PATH (`g++ --version` works).
+2. Open this folder in VS Code → **Ctrl+Shift+B** to build.
+3. Run demo: `.\bin\app.exe`
 
-## Design
-- **Book**: encapsulates id, title, author, genre, year, and availability; exposes `borrow()` / `giveBack()`.
-- **User**: encapsulates id, name, and a set of borrowed book IDs; enforces a **borrow limit**.
-- **Library**: hides storage (`unordered_map`); provides APIs: add/remove/search, borrow/return.
-- **Status** enum: clear success/failure codes instead of raw booleans.
+## Test instructions
+See `TESTING.md` for per-test build commands.
 
-### OOP Principles
-- **Encapsulation**: internal fields are private; only methods expose behavior.
-- **Abstraction**: consumers use `Library` API; they don’t know about the underlying containers.
-- **Single Responsibility**: each class manages its own concern.
-- **Extensible**: easy to add reservations, fines, or persistence later.
+## Design choices
+- **Encapsulation:** private fields; mutating actions exposed as methods.
+- **Separation of concerns:** Book/User maintain invariants; Library orchestrates flows.
+- **Safety:** cannot remove borrowed books; users have borrow limits; simple rollback in `borrowBook`.
 
-## Build (CMake)
-```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
-
+## GitHub
+Publish this folder to: `https://github.com/Quana254/online-library-management-system.git`

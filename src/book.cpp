@@ -1,6 +1,4 @@
-// src/book.cpp
 #include "book.h"
-#include <utility>
 
 Book::Book(int id, std::string title, std::string author,
            std::string genre, int year)
@@ -17,13 +15,18 @@ const std::string& Book::author() const { return author_; }
 const std::string& Book::genre() const { return genre_; }
 int Book::year() const { return year_; }
 bool Book::available() const { return available_; }
+std::optional<int> Book::borrowerId() const { return borrowerId_; }
 
-bool Book::borrow() {
+bool Book::borrow(int userId) {
     if (!available_) return false;
     available_ = false;
+    borrowerId_ = userId;
     return true;
 }
 
-void Book::giveBack() {
+bool Book::giveBack() {
+    if (available_) return false;
     available_ = true;
+    borrowerId_.reset();
+    return true;
 }

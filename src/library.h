@@ -1,38 +1,33 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
 #include <string>
-#include <unordered_map>
-#include <optional>
-#include "Book.h"
-#include "User.h"
-
-enum class Status {
-    Ok,
-    NotFound,
-    AlreadyExists,
-    NotAvailable,
-    UserLimitReached,
-    InvalidOperation
-};
+#include "book.h"
+#include "user.h"
 
 class Library {
-    // Storage hidden (encapsulation)
-    std::unordered_map<int, Book> books_; // id -> Book
-    std::unordered_map<int, User> users_; // id -> User
+private:
+    std::unordered_map<int, Book> booksById_;
+    std::unordered_map<int, User> usersById_;
+
 public:
-    // Books
-    Status addBook(const Book& b);
-    Status removeBook(int bookId);
-    std::optional<Book> getBook(int bookId) const;
-    std::vector<Book> searchByTitle(const std::string& q) const;
-    std::vector<Book> searchByAuthor(const std::string& q) const;
-    std::vector<Book> searchByGenre(const std::string& q) const;
+    // Book management
+    bool addBook(const Book& b);
+    bool removeBook(int bookId); // fails if book not found or borrowed
+    Book* findBook(int bookId);
+    const Book* findBook(int bookId) const;
 
-    // Users
-    Status addUser(const User& u);
-    std::optional<User> getUser(int userId) const;
+    std::vector<Book*> searchByTitle(const std::string& title);
+    std::vector<Book*> searchByAuthor(const std::string& author);
+    std::vector<Book*> searchByYear(int year);
 
-    // Borrow/Return
-    Status borrowBook(int userId, int bookId);
-    Status returnBook(int userId, int bookId);
+    // User management
+    bool addUser(const User& u);
+    bool removeUser(int userId); // fails if user not found or holds books
+    User* findUser(int userId);
+    const User* findUser(int userId) const;
+
+    // Circulation
+    bool borrowBook(int bookId, int userId);
+    bool returnBook(int bookId, int userId);
 };
